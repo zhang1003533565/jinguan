@@ -1,0 +1,28 @@
+{
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationBarTitleText": "首页"
+      }
+    },
+    {
+      "path": "pages/warning/alert",
+      "style": {
+        "navigationBarTitleText": "预警记录"
+      }
+    },
+    {
+      "path": "pages/upload/upload",
+      "style": {
+        "navigationBarTitleText": "数据上传"
+      }
+    },
+    {
+      "path": "pages/monitor/monitor",
+      "style": {
+        "navigationBarTitleText": "监控中心"
+      }
+    }
+  ]
+}
