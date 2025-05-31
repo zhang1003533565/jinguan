@@ -202,148 +202,247 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from "vue";
-import * as echarts from "echarts";
+import { ref, onMounted, computed } from 'vue'
+import warningApi from '@/api/warning'
+import { ElMessage } from 'element-plus'
+import * as echarts from 'echarts'
 
-const filter = ref({ level: "", type: "", keyword: "" });
-const page = ref(1);
-const pageSize = 10;
-const showExportModal = ref(false);
-const showChartModal = ref(false);
-const exportMode = ref("page");
-const chartRef = ref(null);
-const selectedAlarm = ref(null);
+// 数据响应式定义
+const loading = ref(false)
+const alarms = ref([])
+const selectedAlarm = ref(null)
+const showExportModal = ref(false)
+const showChartModal = ref(false)
+const exportMode = ref('all')
+const page = ref(1)
+const pageSize = 10
 
-const alarmList = ref([
-  {
-    id: 1,
-    time: "2025-05-27 23:10",
-    type: "设备",
-    level: "高",
-    content: "温度异常",
-    status: "已处理",
-    remark: "手动复位设备",
-  },
-  {
-    id: 2,
-    time: "2025-05-27 23:15",
-    type: "环境",
-    level: "中",
-    content: "湿度波动较大",
-    status: "未处理",
-    remark: "",
-  },
-]);
+// 筛选条件
+const filter = ref({
+  level: '',
+  type: '',
+  keyword: ''
+})
 
-const filteredAlarms = computed(() => {
-  return alarmList.value.filter((a) => {
-    return (
-      (!filter.value.level || a.level === filter.value.level) &&
-      (!filter.value.type || a.type === filter.value.type) &&
-      (!filter.value.keyword || a.content.includes(filter.value.keyword))
-    );
-  });
-});
-const totalPages = computed(() =>
-  Math.ceil(filteredAlarms.value.length / pageSize)
-);
-const paginatedAlarms = computed(() => {
-  const start = (page.value - 1) * pageSize;
-  return filteredAlarms.value.slice(start, start + pageSize);
-});
+// 获取预警列表
+const fetchWarnings = async (retryCount = 0) => {
+  try {
+    if (retryCount === 0) {
+      loading.value = true
+    }
+    const params = {
+      page: page.value - 1,
+      size: pageSize,
+      ...filter.value
+    }
+    console.log(`${retryCount > 0 ? `[重试${retryCount}] ` : ''}开始获取预警列表，请求参数:`, params)
+    
+    const res = await warningApi.getList(params)
+    console.log('预警列表响应数据:', res.data)
+    
+    if (!res.data || !Array.isArray(res.data.content)) {
+      throw new Error('响应数据格式错误')
+    }
+    
+    alarms.value = res.data.content
+    totalPages.value = res.data.totalPages
+  } catch (error) {
+    console.error('获取预警列表失败：', error)
+    
+    // 记录详细错误信息
+    const errorDetails = {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      url: error.config?.url,
+      method: error.config?.method,
+      params: error.config?.params,
+      headers: error.config?.headers
+    }
+    console.error('错误详情:', errorDetails)
 
-function applyFilter() {
-  page.value = 1;
-}
-function clearFilter() {
-  filter.value = { level: "", type: "", keyword: "" };
-  page.value = 1;
-}
-function prevPage() {
-  if (page.value > 1) page.value--;
-}
-function nextPage() {
-  if (page.value < totalPages.value) page.value++;
-}
-function viewDetail(alarm) {
-  selectedAlarm.value = { ...alarm };
-}
-function saveRemarkAndClose() {
-  const index = alarmList.value.findIndex(
-    (a) => a.id === selectedAlarm.value.id
-  );
-  if (index !== -1) alarmList.value[index].remark = selectedAlarm.value.remark;
-  selectedAlarm.value = null;
-}
-function markProcessed(alarm) {
-  alarm.status = "已处理";
-}
-function markProcessedInModal() {
-  const index = alarmList.value.findIndex(
-    (a) => a.id === selectedAlarm.value.id
-  );
-  if (index !== -1) {
-    alarmList.value[index].status = "已处理";
-    alarmList.value[index].remark = selectedAlarm.value.remark;
+    // 如果是500错误且重试次数小于3次，则重试
+    if (error.response?.status === 500 && retryCount < 3) {
+      console.log(`第${retryCount + 1}次重试获取预警列表`)
+      await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))) // 递增重试间隔
+      return fetchWarnings(retryCount + 1)
+    }
+
+    let errorMessage = '获取预警列表失败'
+    if (error.response?.status === 500) {
+      if (retryCount >= 3) {
+        errorMessage = '服务器出现问题，请稍后再试'
+        ElMessage({
+          type: 'error',
+          message: errorMessage,
+          duration: 5000,
+          showClose: true
+        })
+      } else {
+        errorMessage += ': 服务器内部错误'
+        ElMessage.error(errorMessage)
+      }
+    } else if (error.response?.status === 401) {
+      errorMessage += ': 未授权，请重新登录'
+      ElMessage.error(errorMessage)
+      // 可以在这里添加重定向到登录页的逻辑
+    } else if (error.response?.status === 403) {
+      errorMessage += ': 无权限访问'
+      ElMessage.error(errorMessage)
+    } else {
+      errorMessage += `: ${error.message}`
+      ElMessage.error(errorMessage)
+    }
+  } finally {
+    if (retryCount === 0 || retryCount >= 3) {
+      loading.value = false
+    }
   }
-  selectedAlarm.value = null;
 }
-function handleExport() {
-  let data = [];
-  if (exportMode.value === "all") data = alarmList.value;
-  else if (exportMode.value === "filtered") data = filteredAlarms.value;
-  else data = paginatedAlarms.value;
-  const csv = [
-    ["时间", "类型", "级别", "内容", "状态", "备注"],
-    ...data.map((a) => [
-      a.time,
-      a.type,
-      a.level,
-      a.content,
-      a.status,
-      a.remark,
-    ]),
-  ]
-    .map((e) => e.join(","))
-    .join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.setAttribute("download", "告警导出.csv");
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  showExportModal.value = false;
+
+// 处理预警
+const handleWarning = async (id, handler, handleMethod) => {
+  try {
+    await warningApi.handleWarning(id, handler, handleMethod)
+    ElMessage.success('处理成功')
+    await fetchWarnings()
+  } catch (error) {
+    console.error('处理预警失败：', error)
+    ElMessage.error('处理预警失败')
+  }
 }
-function openChart() {
-  showChartModal.value = true;
-  nextTick(() => {
-    const chart = echarts.init(chartRef.value);
-    const levelCount = { 高: 0, 中: 0, 低: 0 };
-    filteredAlarms.value.forEach((a) => {
-      levelCount[a.level] = (levelCount[a.level] || 0) + 1;
-    });
-    chart.setOption({
-      backgroundColor: "#1B1F3B",
-      tooltip: {},
-      xAxis: {
-        type: "category",
-        data: ["高", "中", "低"],
-        axisLabel: { color: "#fff" },
-      },
-      yAxis: { type: "value", axisLabel: { color: "#fff" } },
-      series: [
-        {
-          type: "bar",
-          data: [levelCount["高"], levelCount["中"], levelCount["低"]],
+
+// 导出预警记录
+const exportWarnings = async () => {
+  try {
+    const params = {
+      exportMode: exportMode.value,
+      ...filter.value
+    }
+    await warningApi.exportWarnings(params)
+    ElMessage.success('导出成功')
+    showExportModal.value = false
+  } catch (error) {
+    console.error('导出预警记录失败：', error)
+    ElMessage.error('导出预警记录失败')
+  }
+}
+
+// 获取预警统计信息
+const fetchWarningStatistics = async () => {
+  try {
+    const res = await warningApi.getWarningStatistics()
+    const data = res.data
+    drawChart(data)
+  } catch (error) {
+    console.error('获取预警统计信息失败：', error)
+    ElMessage.error('获取预警统计信息失败')
+  }
+}
+
+// 绘制图表
+const drawChart = (data) => {
+  const chartDom = document.getElementById('warningChart')
+  const chart = echarts.init(chartDom)
+  chart.setOption({
+    title: {
+      text: '预警等级分布',
+      textStyle: { color: '#fff' }
+    },
+    tooltip: {
+      trigger: 'item',
+      formatter: '{b}: {c} ({d}%)'
+    },
+    series: [
+      {
+        type: 'pie',
+        radius: '70%',
+        data: [
+          { value: data.high, name: '高级预警' },
+          { value: data.medium, name: '中级预警' },
+          { value: data.low, name: '低级预警' }
+        ],
+        emphasis: {
           itemStyle: {
-            color: (p) => ["#ef4444", "#facc15", "#10b981"][p.dataIndex],
-          },
-        },
-      ],
-    });
-  });
+            shadowBlur: 10,
+            shadowOffsetX: 0,
+            shadowColor: 'rgba(0, 0, 0, 0.5)'
+          }
+        }
+      }
+    ]
+  })
 }
+
+// 分页相关
+const totalPages = ref(1)
+
+// 添加paginatedAlarms计算属性
+const paginatedAlarms = computed(() => {
+  return alarms.value
+})
+
+const prevPage = () => {
+  if (page.value > 1) {
+    page.value--
+    fetchWarnings()
+  }
+}
+const nextPage = () => {
+  if (page.value < totalPages.value) {
+    page.value++
+    fetchWarnings()
+  }
+}
+
+// 筛选相关
+const applyFilter = () => {
+  page.value = 1
+  fetchWarnings()
+}
+const clearFilter = () => {
+  filter.value = {
+    level: '',
+    type: '',
+    keyword: ''
+  }
+  applyFilter()
+}
+
+// 查看详情
+const viewDetail = (alarm) => {
+  selectedAlarm.value = { ...alarm }
+}
+
+// 标记为已处理
+const markProcessed = async (alarm) => {
+  await handleWarning(alarm.id, 'system', '自动处理')
+}
+
+// 在弹窗中标记为已处理
+const markProcessedInModal = async () => {
+  if (selectedAlarm.value) {
+    await handleWarning(selectedAlarm.value.id, 'system', '手动处理')
+    selectedAlarm.value = null
+  }
+}
+
+// 保存备注并关闭
+const saveRemarkAndClose = () => {
+  // 这里可以添加保存备注的API调用
+  selectedAlarm.value = null
+}
+
+// 打开图表
+const openChart = async () => {
+  showChartModal.value = true
+  await fetchWarningStatistics()
+}
+
+// 页面加载时获取数据
+onMounted(() => {
+  fetchWarnings()
+})
 </script>
 
 <style scoped>

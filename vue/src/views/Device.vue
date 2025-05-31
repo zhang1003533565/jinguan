@@ -103,7 +103,7 @@
             >
               编辑设备
             </button>
-            <button class="bg-red-600 px-3 py-1 rounded" @click="deleteDevice">
+            <button class="bg-red-600 px-3 py-1 rounded" @click="removeDeviceFromGroup">
               删除设备
             </button>
           </div>
@@ -246,6 +246,8 @@
 <script setup>
 import { ref, computed, onMounted, nextTick } from "vue";
 import * as echarts from "echarts";
+import deviceApi from '@/api/device'
+import { ElMessage } from 'element-plus'
 
 const search = ref("");
 const currentPage = ref(1);
@@ -366,7 +368,7 @@ function saveDevice() {
   modalVisible.value = false;
 }
 
-function deleteDevice() {
+function removeDeviceFromGroup() {
   if (!selectedDevice.value) return;
   deviceGroups.value.forEach((group) => {
     group.devices = group.devices.filter(
@@ -414,6 +416,88 @@ function drawChart() {
 }
 
 onMounted(drawChart);
+
+// 数据响应式定义
+const deviceList = ref([])
+const loading = ref(false)
+
+// 获取设备列表
+const fetchDeviceList = async () => {
+  try {
+    loading.value = true
+    const res = await deviceApi.getList()
+    deviceList.value = res.data
+  } catch (error) {
+    console.error('获取设备列表失败：', error)
+    ElMessage.error('获取设备列表失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 获取设备详情
+const fetchDeviceDetail = async (id) => {
+  try {
+    const res = await deviceApi.getById(id)
+    selectedDevice.value = res.data
+  } catch (error) {
+    console.error('获取设备详情失败：', error)
+    ElMessage.error('获取设备详情失败')
+  }
+}
+
+// 添加设备
+const addDevice = async (deviceData) => {
+  try {
+    await deviceApi.create(deviceData)
+    ElMessage.success('添加设备成功')
+    await fetchDeviceList()
+  } catch (error) {
+    console.error('添加设备失败：', error)
+    ElMessage.error('添加设备失败')
+  }
+}
+
+// 更新设备
+const updateDevice = async (id, deviceData) => {
+  try {
+    await deviceApi.update(id, deviceData)
+    ElMessage.success('更新设备成功')
+    await fetchDeviceDetail(id)
+  } catch (error) {
+    console.error('更新设备失败：', error)
+    ElMessage.error('更新设备失败')
+  }
+}
+
+// 删除设备
+const deleteDevice = async (id) => {
+  try {
+    await deviceApi.delete(id)
+    ElMessage.success('删除设备成功')
+    selectedDevice.value = null
+    await fetchDeviceList()
+  } catch (error) {
+    console.error('删除设备失败：', error)
+    ElMessage.error('删除设备失败')
+  }
+}
+
+// 更新设备状态
+const updateDeviceStatus = async (id, status) => {
+  try {
+    await deviceApi.updateStatus(id, status)
+    await fetchDeviceDetail(id)
+  } catch (error) {
+    console.error('更新设备状态失败：', error)
+    ElMessage.error('更新设备状态失败')
+  }
+}
+
+// 页面加载时获取数据
+onMounted(() => {
+  fetchDeviceList()
+})
 </script>
 
 <style scoped>

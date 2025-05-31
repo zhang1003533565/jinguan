@@ -1,8 +1,8 @@
+@import '@fortawesome/fontawesome-free/css/all.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import '@fortawesome/fontawesome-free/css/all.css';
 
 :root {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -46,7 +46,7 @@ body {
 /* 圆角按钮样式 */
 .rounded-button {
   @apply rounded-md transition-all duration-200;
-}
+  }
 
 /* 数据面板样式 */
 .data-panel {

@@ -38,13 +38,17 @@
 
           <!-- 摄像头画面或离线状态 -->
           <div class="relative">
-            <img
+            <video
               :src="cam.src"
               :alt="cam.name"
               class="w-full h-48 object-cover transition-all duration-300 cursor-pointer"
               :class="{ 'grayscale brightness-50': !cam.online }"
               @dblclick="fullscreen(group, index)"
-            />
+              autoplay
+              muted
+              loop
+              playsinline
+            ></video>
             <!-- 离线遮罩 -->
             <div
               v-if="!cam.online"
@@ -77,72 +81,109 @@
 </template>
 
 <script setup>
-import { reactive } from "vue";
+import { ref, onMounted } from 'vue'
+import cameraApi from '@/api/camera'
+import { ElMessage } from 'element-plus'
 
-const getTime = () => new Date().toLocaleTimeString();
+// 数据响应式定义
+const cameraGroups = ref([])
+const loading = ref(false)
 
-const cameraGroups = reactive([
-  {
-    name: "隧道 A 段",
-    cameras: [
-      {
-        name: "A-1",
-        src: "https://placehold.co/400x240?text=A-1",
-        updated: getTime(),
-        online: true,
-      },
-      {
-        name: "A-2",
-        src: "https://placehold.co/400x240?text=A-2",
-        updated: getTime(),
-        online: false,
-      },
-      {
-        name: "A-3",
-        src: "https://placehold.co/400x240?text=A-3",
-        updated: getTime(),
-        online: true,
-      },
-    ],
-  },
-  {
-    name: "隧道 B 段",
-    cameras: [
-      {
-        name: "B-1",
-        src: "https://placehold.co/400x240?text=B-1",
-        updated: getTime(),
-        online: true,
-      },
-      {
-        name: "B-2",
-        src: "https://placehold.co/400x240?text=B-2",
-        updated: getTime(),
-        online: true,
-      },
-      {
-        name: "B-3",
-        src: "https://placehold.co/400x240?text=B-3",
-        updated: getTime(),
-        online: false,
-      },
-    ],
-  },
-]);
-
-function refreshCamera(group, index) {
-  const cam = group.cameras[index];
-  cam.src = cam.src.split("?")[0] + `?t=${Date.now()}`;
-  cam.updated = getTime();
+// 获取摄像头列表
+const fetchCameraList = async () => {
+  try {
+    loading.value = true
+    const res = await cameraApi.getList()
+    // 将摄像头列表按隧道分组
+    const groups = {}
+    res.data.content.forEach(camera => {
+      if (!groups[camera.tunnelId]) {
+        groups[camera.tunnelId] = {
+          name: `隧道${camera.tunnelId}`,
+          cameras: []
+        }
+      }
+      groups[camera.tunnelId].cameras.push({
+        id: camera.id,
+        name: camera.name,
+        src: camera.streamUrl || `/api/admin/camera/${camera.id}/stream`,
+        updated: new Date(camera.updatedAt).toLocaleTimeString(),
+        online: camera.isOnline,
+        status: camera.status,
+        location: camera.location,
+        lastMaintenanceTime: camera.lastMaintenanceTime,
+        lastOnlineTime: camera.lastOnlineTime
+      })
+    })
+    cameraGroups.value = Object.values(groups)
+  } catch (error) {
+    console.error('获取摄像头列表失败：', error)
+    ElMessage.error('获取摄像头列表失败')
+  } finally {
+    loading.value = false
+  }
 }
 
+// 获取RTSP地址
+const getRtspUrl = async (cameraId) => {
+  try {
+    const res = await cameraApi.getRtspUrl(cameraId)
+    return res.data
+  } catch (error) {
+    console.error('获取RTSP地址失败：', error)
+    ElMessage.error('获取RTSP地址失败')
+    return null
+  }
+}
+
+// 更新摄像头状态
+const updateCameraStatus = async (cameraId, isOnline) => {
+  try {
+    await cameraApi.updateOnlineStatus(cameraId, isOnline)
+  } catch (error) {
+    console.error('更新摄像头状态失败：', error)
+    ElMessage.error('更新摄像头状态失败')
+  }
+}
+
+// 控制云台
+const controlPTZ = async (cameraId, command, speed = 1) => {
+  try {
+    await cameraApi.controlPTZ(cameraId, command, speed)
+  } catch (error) {
+    console.error('控制云台失败：', error)
+    ElMessage.error('控制云台失败')
+  }
+}
+
+// 刷新摄像头画面
+const refreshCamera = async (group, index) => {
+  const camera = group.cameras[index]
+  try {
+    const rtspUrl = await getRtspUrl(camera.id)
+    if (rtspUrl) {
+      camera.src = rtspUrl
+      camera.updated = new Date().toLocaleTimeString()
+    }
+  } catch (error) {
+    console.error('刷新摄像头画面失败：', error)
+    ElMessage.error('刷新摄像头画面失败')
+  }
+}
+
+// 页面加载时获取数据
+onMounted(() => {
+  fetchCameraList()
+})
+
+// 全屏显示
 function fullscreen(group, index) {
-  const flatCams = cameraGroups.flatMap((g) => g.cameras);
-  const camIndex = flatCams.indexOf(group.cameras[index]);
-  const allImgs = document.querySelectorAll("img");
-  const imgEl = allImgs[camIndex];
-  if (imgEl?.requestFullscreen) {
-    imgEl.requestFullscreen();
+  const flatCams = cameraGroups.value.flatMap((g) => g.cameras)
+  const camIndex = flatCams.indexOf(group.cameras[index])
+  const allVideos = document.querySelectorAll('video')
+  const videoEl = allVideos[camIndex]
+  if (videoEl?.requestFullscreen) {
+    videoEl.requestFullscreen()
   }
 }
 </script>

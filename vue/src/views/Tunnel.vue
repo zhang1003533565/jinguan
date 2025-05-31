@@ -136,15 +136,14 @@
                 <div
                   class="w-full h-[calc(100%-4rem)] bg-dark-blue rounded-lg border border-blue-900/50 p-4"
                 >
-                  <div
-                    class="w-full h-full flex items-center justify-center text-gray-400"
-                  >
-                    <div class="text-center">
-                      <i class="fas fa-tv text-6xl mb-4"></i>
-                      <p>大屏显示区域</p>
-                      <p class="text-sm mt-2">可以在这里放置您的大屏内容</p>
-                    </div>
-                  </div>
+                  <video
+                    class="w-full h-full object-cover rounded-lg"
+                    src="/assets/vedio/ditie.mp4"
+                    autoplay
+                    loop
+                    muted
+                    playsinline
+                  ></video>
                 </div>
               </div>
             </div>
@@ -365,6 +364,11 @@
 import { ref, onMounted, onUnmounted, computed } from "vue";
 import * as echarts from "echarts";
 import { TransitionGroup } from "vue";
+import tunnelApi from '@/api/tunnel'
+import environmentApi from '@/api/environment'
+import warningApi from '@/api/warning'
+import { ElMessage } from 'element-plus'
+
 // 时间显示
 const currentDateTime = ref("");
 // 导航项
@@ -861,6 +865,57 @@ onUnmounted(() => {
   // 移除事件监听
   window.removeEventListener("resize", handleResize);
 });
+
+// 数据响应式定义
+const tunnelList = ref([])
+const currentTunnel = ref(null)
+const environmentData = ref(null)
+const warningList = ref([])
+
+// 获取隧道列表
+const fetchTunnelList = async () => {
+  try {
+    const res = await tunnelApi.getTunnelList()
+    tunnelList.value = res.data
+  } catch (error) {
+    console.error('获取隧道列表失败：', error)
+    ElMessage.error('获取隧道列表失败')
+  }
+}
+
+// 获取环境数据
+const fetchEnvironmentData = async (tunnelId) => {
+  try {
+    const res = await tunnelApi.getLatestEnvironment(tunnelId)
+    environmentData.value = res.data
+  } catch (error) {
+    console.error('获取环境数据失败：', error)
+  }
+}
+
+// 获取预警信息
+const fetchWarnings = async (tunnelId) => {
+  try {
+    const res = await tunnelApi.getWarnings(tunnelId)
+    warningList.value = res.data
+  } catch (error) {
+    console.error('获取预警信息失败：', error)
+  }
+}
+
+// 页面加载时获取数据
+onMounted(() => {
+  fetchTunnelList()
+})
+
+// 选择隧道时更新数据
+const handleTunnelSelect = async (tunnel) => {
+  currentTunnel.value = tunnel
+  await Promise.all([
+    fetchEnvironmentData(tunnel.id),
+    fetchWarnings(tunnel.id)
+  ])
+}
 </script>
 <style scoped>
 .bg-dark-blue {

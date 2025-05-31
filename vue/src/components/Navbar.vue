@@ -38,7 +38,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 
 const navItems = [
   { name: "隧道监测", icon: "fa-chart-line", route: "/tunnel" },
@@ -50,6 +50,8 @@ const navItems = [
 ];
 
 const currentDateTime = ref("");
+let timer;
+
 function updateDateTime() {
   const now = new Date();
   const y = now.getFullYear();
@@ -63,7 +65,13 @@ function updateDateTime() {
 
 onMounted(() => {
   updateDateTime();
-  setInterval(updateDateTime, 1000);
+  timer = setInterval(updateDateTime, 1000);
+});
+
+onUnmounted(() => {
+  if (timer) {
+    clearInterval(timer);
+  }
 });
 </script>
 

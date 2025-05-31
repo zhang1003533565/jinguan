@@ -6,4 +6,11 @@ import "./style.css";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "@fortawesome/fontawesome-free/js/all.min.js";
 
-createApp(App).use(router).mount("#app");
+// 导入 Element Plus
+import ElementPlus from 'element-plus'
+import 'element-plus/dist/index.css'
+
+const app = createApp(App)
+app.use(router)
+app.use(ElementPlus)
+app.mount("#app")
