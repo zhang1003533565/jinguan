@@ -57,6 +57,8 @@
             <th class="px-2 py-3">级别</th>
             <th class="px-2 py-3">内容</th>
             <th class="px-2 py-3">处理方式</th>
+            <th class="px-2 py-3">处理人</th>
+            <th class="px-2 py-3">处理时间</th>
             <th class="px-2 py-3">状态</th>
             <th class="px-2 py-3">操作</th>
           </tr>
@@ -72,6 +74,8 @@
             <td class="px-2 py-3">{{ alarm.level }}</td>
             <td class="px-2 py-3">{{ alarm.description }}</td>
             <td class="px-2 py-3">{{ alarm.handleMethod || '-' }}</td>
+            <td class="px-2 py-3">{{ alarm.handler || '-' }}</td>
+            <td class="px-2 py-3">{{ alarm.handleTime ? formatDateTime(alarm.handleTime) : '-' }}</td>
             <td class="px-2 py-3">{{ alarm.status }}</td>
             <td class="px-2 py-3">
               <button
