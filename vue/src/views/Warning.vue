@@ -34,7 +34,7 @@
         清除
       </button>
       <button
-        @click="showExportModal = true"
+        @click="() => { console.log('打开导出弹窗'); showExportModal = true; }"
         class="bg-green-600 px-3 py-1 rounded text-sm"
       >
         导出 CSV
@@ -52,10 +52,11 @@
       <table class="w-full text-[15px] leading-relaxed text-left">
         <thead class="text-gray-300 border-b border-gray-600">
           <tr>
-            <th class="px-2 py-3">时间</th>
+            <th class="px-2 py-3">创建时间</th>
             <th class="px-2 py-3">类型</th>
             <th class="px-2 py-3">级别</th>
             <th class="px-2 py-3">内容</th>
+            <th class="px-2 py-3">处理方式</th>
             <th class="px-2 py-3">状态</th>
             <th class="px-2 py-3">操作</th>
           </tr>
@@ -66,10 +67,11 @@
             :key="alarm.id"
             class="border-b border-gray-700 hover:bg-[#2a2f50]"
           >
-            <td class="px-2 py-3">{{ alarm.time }}</td>
+            <td class="px-2 py-3">{{ formatDateTime(alarm.createdAt) }}</td>
             <td class="px-2 py-3">{{ alarm.type }}</td>
             <td class="px-2 py-3">{{ alarm.level }}</td>
-            <td class="px-2 py-3">{{ alarm.content }}</td>
+            <td class="px-2 py-3">{{ alarm.description }}</td>
+            <td class="px-2 py-3">{{ alarm.handleMethod || '-' }}</td>
             <td class="px-2 py-3">{{ alarm.status }}</td>
             <td class="px-2 py-3">
               <button
@@ -117,10 +119,13 @@
     >
       <div class="bg-[#1B1F3B] p-6 rounded-lg w-[450px] text-[15px] text-white">
         <h3 class="text-lg font-bold mb-4">告警详情</h3>
-        <p><strong>时间：</strong>{{ selectedAlarm.time }}</p>
+        <p><strong>创建时间：</strong>{{ formatDateTime(selectedAlarm.createdAt) }}</p>
         <p><strong>类型：</strong>{{ selectedAlarm.type }}</p>
         <p><strong>级别：</strong>{{ selectedAlarm.level }}</p>
-        <p><strong>内容：</strong>{{ selectedAlarm.content }}</p>
+        <p><strong>内容：</strong>{{ selectedAlarm.description }}</p>
+        <p><strong>处理方式：</strong>{{ selectedAlarm.handleMethod || '-' }}</p>
+        <p><strong>处理人：</strong>{{ selectedAlarm.handler || '-' }}</p>
+        <p><strong>处理时间：</strong>{{ selectedAlarm.handleTime ? formatDateTime(selectedAlarm.handleTime) : '-' }}</p>
         <p><strong>状态：</strong>{{ selectedAlarm.status }}</p>
         <label class="block mt-4 mb-1 font-semibold">备注：</label>
         <textarea
@@ -153,27 +158,30 @@
       <div class="bg-[#1B1F3B] p-6 rounded w-96 text-[15px]">
         <h3 class="text-lg font-bold mb-4">选择导出范围</h3>
         <div class="space-y-2 mb-4">
-          <label
-            ><input type="radio" v-model="exportMode" value="all" />
-            全部数据</label
-          ><br />
-          <label
-            ><input type="radio" v-model="exportMode" value="filtered" />
-            当前筛选结果</label
-          ><br />
-          <label
-            ><input type="radio" v-model="exportMode" value="page" />
-            当前分页</label
-          >
+          <label class="block">
+            <input type="radio" v-model="exportMode" value="all" class="mr-2" />
+            全部数据
+          </label>
+          <label class="block">
+            <input type="radio" v-model="exportMode" value="filtered" class="mr-2" />
+            当前筛选结果
+          </label>
+          <label class="block">
+            <input type="radio" v-model="exportMode" value="page" class="mr-2" />
+            当前分页
+          </label>
         </div>
         <div class="flex justify-end gap-4">
           <button
             class="bg-gray-500 px-4 py-1 rounded"
-            @click="showExportModal = false"
+            @click="() => { console.log('取消导出'); showExportModal = false; }"
           >
             取消
           </button>
-          <button class="bg-blue-600 px-4 py-1 rounded" @click="handleExport">
+          <button 
+            class="bg-blue-600 px-4 py-1 rounded" 
+            @click="handleExport"
+          >
             导出
           </button>
         </div>
@@ -185,24 +193,24 @@
       v-if="showChartModal"
       class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
     >
-      <div class="bg-[#1B1F3B] p-4 rounded w-[600px] h-[400px] text-white">
-        <h3 class="text-lg font-bold mb-2">告警等级分布图</h3>
-        <div ref="chartRef" class="w-full h-[300px]"></div>
-        <div class="text-right mt-3">
+      <div class="bg-[#1B1F3B] p-6 rounded-lg w-[800px] h-[600px]">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-bold">告警级别分布图</h3>
           <button
-            class="bg-blue-500 px-4 py-1 rounded"
-            @click="showChartModal = false"
+            @click="() => { showChartModal = false }"
+            class="text-gray-400 hover:text-white"
           >
-            关闭
+            ✕
           </button>
         </div>
+        <div ref="chartRef" class="w-full h-[500px]"></div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import warningApi from '@/api/warning'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
@@ -312,19 +320,132 @@ const handleWarning = async (id, handler, handleMethod) => {
   }
 }
 
-// 导出预警记录
-const exportWarnings = async () => {
+// 格式化日期时间
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return '-'
+  const date = new Date(dateStr)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+}
+
+// 修改导出 CSV 功能
+const exportWarnings = () => {
   try {
-    const params = {
-      exportMode: exportMode.value,
-      ...filter.value
+    console.log('开始导出 CSV...')
+    let dataToExport = []
+    
+    // 根据导出模式选择数据
+    if (exportMode.value === 'all') {
+      dataToExport = alarms.value
+      console.log('导出全部数据，数据量：', dataToExport.length)
+    } else if (exportMode.value === 'filtered') {
+      dataToExport = alarms.value.filter(alarm => {
+        return (!filter.value.level || alarm.level === filter.value.level) &&
+               (!filter.value.type || alarm.type === filter.value.type) &&
+               (!filter.value.keyword || alarm.description.includes(filter.value.keyword))
+      })
+      console.log('导出筛选数据，筛选条件：', filter.value)
+      console.log('筛选后数据量：', dataToExport.length)
+    } else if (exportMode.value === 'page') {
+      dataToExport = paginatedAlarms.value
+      console.log('导出当前页数据，数据量：', dataToExport.length)
     }
-    await warningApi.exportWarnings(params)
-    ElMessage.success('导出成功')
+
+    console.log('准备生成 CSV 内容...')
+    // 生成 CSV 内容
+    const headers = ['创建时间', '类型', '级别', '内容', '处理方式', '处理人', '处理时间', '状态']
+    let csvContent = '\ufeff' // 添加 BOM 标记，确保 Excel 正确识别中文
+    
+    // 添加表头
+    csvContent += headers.join(',') + '\n'
+    console.log('已添加表头：', headers)
+    
+    // 添加数据行
+    dataToExport.forEach((alarm, index) => {
+      const row = [
+        alarm.createdAt ? formatDateTime(alarm.createdAt) : '',
+        alarm.type || '',
+        alarm.level || '',
+        `"${(alarm.description || '').replace(/"/g, '""')}"`,
+        `"${(alarm.handleMethod || '').replace(/"/g, '""')}"`,
+        alarm.handler || '',
+        alarm.handleTime ? formatDateTime(alarm.handleTime) : '',
+        alarm.status || ''
+      ]
+      csvContent += row.join(',') + '\n'
+      if (index === 0) {
+        console.log('数据样例（第一行）：', row)
+      }
+    })
+
+    console.log('CSV 内容生成完成，总行数：', dataToExport.length + 1)
+
+    // 使用 Blob 创建文件
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' })
+    console.log('Blob 对象创建成功，大小：', blob.size, 'bytes')
+    
+    // 获取当前时间作为文件名的一部分
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+    const fileName = `预警记录_${timestamp}.csv`
+    console.log('生成的文件名：', fileName)
+
+    // 使用 uni.downloadFile 方法（小程序环境）
+    if (typeof uni !== 'undefined') {
+      console.log('检测到小程序环境，使用 uni.downloadFile...')
+      // 创建临时文件 URL
+      const tempUrl = URL.createObjectURL(blob)
+      console.log('临时 URL 创建成功：', tempUrl)
+      
+      uni.downloadFile({
+        url: tempUrl,
+        success: (res) => {
+          console.log('下载成功，状态码：', res.statusCode)
+          if (res.statusCode === 200) {
+            uni.saveFile({
+              tempFilePath: res.tempFilePath,
+              success: function (res) {
+                console.log('文件保存成功，路径：', res.savedFilePath)
+                ElMessage.success('文件已保存：' + res.savedFilePath)
+              },
+              fail: function(error) {
+                console.error('保存文件失败：', error)
+                ElMessage.error('保存文件失败')
+              }
+            })
+          }
+        },
+        fail: (error) => {
+          console.error('下载文件失败：', error)
+          ElMessage.error('下载文件失败')
+        },
+        complete: () => {
+          console.log('清理临时 URL...')
+          URL.revokeObjectURL(tempUrl)
+        }
+      })
+    } else {
+      console.log('浏览器环境，使用标准下载方式...')
+      // 浏览器环境
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(blob)
+      link.download = fileName
+      console.log('下载链接创建成功：', link.href)
+      
+      document.body.appendChild(link)
+      console.log('触发下载...')
+      link.click()
+      
+      document.body.removeChild(link)
+      URL.revokeObjectURL(link.href)
+      console.log('清理完成')
+    }
+
     showExportModal.value = false
+    console.log('导出过程完成')
+    ElMessage.success('导出成功')
   } catch (error) {
-    console.error('导出预警记录失败：', error)
-    ElMessage.error('导出预警记录失败')
+    console.error('导出预警记录失败，详细错误：', error)
+    console.error('错误堆栈：', error.stack)
+    ElMessage.error('导出预警记录失败：' + error.message)
   }
 }
 
@@ -341,36 +462,112 @@ const fetchWarningStatistics = async () => {
 }
 
 // 绘制图表
-const drawChart = (data) => {
-  const chartDom = document.getElementById('warningChart')
-  const chart = echarts.init(chartDom)
-  chart.setOption({
-    title: {
-      text: '预警等级分布',
-      textStyle: { color: '#fff' }
-    },
-    tooltip: {
-      trigger: 'item',
-      formatter: '{b}: {c} ({d}%)'
-    },
-    series: [
-      {
-        type: 'pie',
-        radius: '70%',
-        data: [
-          { value: data.high, name: '高级预警' },
-          { value: data.medium, name: '中级预警' },
-          { value: data.low, name: '低级预警' }
-        ],
-        emphasis: {
-          itemStyle: {
-            shadowBlur: 10,
-            shadowOffsetX: 0,
-            shadowColor: 'rgba(0, 0, 0, 0.5)'
-          }
+const chartRef = ref(null)
+
+const drawChart = () => {
+  console.log('开始绘制图表...')
+  
+  // 统计不同级别的告警数量
+  const statistics = {
+    严重: 0,
+    中等: 0,
+    轻微: 0
+  }
+  
+  alarms.value.forEach(alarm => {
+    if (alarm.level in statistics) {
+      statistics[alarm.level]++
+    }
+  })
+  
+  console.log('告警统计数据：', statistics)
+  
+  // 确保DOM元素已经渲染
+  nextTick(() => {
+    const chartDom = chartRef.value
+    if (!chartDom) {
+      console.error('图表DOM元素未找到')
+      return
+    }
+    
+    console.log('初始化图表实例')
+    const chart = echarts.init(chartDom)
+    
+    const option = {
+      title: {
+        text: '告警级别分布',
+        left: 'center',
+        top: 20,
+        textStyle: {
+          color: '#fff'
         }
-      }
-    ]
+      },
+      tooltip: {
+        trigger: 'item',
+        formatter: '{b}: {c}条 ({d}%)'
+      },
+      legend: {
+        orient: 'vertical',
+        left: 'left',
+        top: 'middle',
+        textStyle: {
+          color: '#fff'
+        }
+      },
+      series: [
+        {
+          name: '告警级别',
+          type: 'pie',
+          radius: ['40%', '70%'],
+          avoidLabelOverlap: false,
+          itemStyle: {
+            borderRadius: 10,
+            borderColor: '#fff',
+            borderWidth: 2
+          },
+          label: {
+            show: true,
+            color: '#fff',
+            formatter: '{b}\n{c}条 ({d}%)'
+          },
+          emphasis: {
+            label: {
+              show: true,
+              fontSize: '20',
+              fontWeight: 'bold'
+            }
+          },
+          labelLine: {
+            show: true
+          },
+          data: [
+            { 
+              value: statistics.严重, 
+              name: '严重告警',
+              itemStyle: { color: '#ff4d4f' }
+            },
+            { 
+              value: statistics.中等, 
+              name: '中等告警',
+              itemStyle: { color: '#faad14' }
+            },
+            { 
+              value: statistics.轻微, 
+              name: '轻微告警',
+              itemStyle: { color: '#52c41a' }
+            }
+          ]
+        }
+      ]
+    }
+    
+    console.log('设置图表配置')
+    chart.setOption(option)
+    
+    // 监听窗口大小变化，调整图表大小
+    window.addEventListener('resize', () => {
+      chart.resize()
+    })
   })
 }
 
@@ -434,9 +631,30 @@ const saveRemarkAndClose = () => {
 }
 
 // 打开图表
-const openChart = async () => {
+const openChart = () => {
+  console.log('打开图表弹窗')
   showChartModal.value = true
-  await fetchWarningStatistics()
+  nextTick(() => {
+    drawChart()
+  })
+}
+
+// 导出相关
+const handleExport = () => {
+  console.log('点击导出按钮')
+  console.log('当前导出模式：', exportMode.value)
+  console.log('当前数据状态：', {
+    总数据量: alarms.value?.length || 0,
+    当前页数据量: paginatedAlarms.value?.length || 0,
+    筛选条件: filter.value
+  })
+  
+  if (!alarms.value || alarms.value.length === 0) {
+    ElMessage.warning('没有可导出的数据')
+    return
+  }
+  
+  exportWarnings()
 }
 
 // 页面加载时获取数据
