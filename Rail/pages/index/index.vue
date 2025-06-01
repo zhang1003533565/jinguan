@@ -2,7 +2,6 @@
 <view class="container">
 <!-- 顶部导航栏 -->
 <view class="nav-bar">
-<text class="nav-title">轨道隧道智能预警系统</text>
 </view>
 <!-- 系统状态概览卡片 -->
 <view class="status-container">
@@ -117,10 +116,13 @@
 </view>
 </scroll-view>
 </view>
+
+<tab-bar></tab-bar>
 </view>
 </template>
 <script lang="ts" setup>
 import { ref } from 'vue';
+import TabBar from '@/components/tab-bar/tab-bar.vue'
 // 模拟数据
 const simulationData = ref([
 { location: 'K32+500', stress: '245.6 MPa', displacement: '2.3 mm', warningLevel: '正常', timestamp: '2025-05-24 12:30' },
@@ -158,22 +160,19 @@ return '#52c41a';
 };
 // 导航函数
 const navigateToSimulation = () => {
-uni.showToast({
-title: '跳转到数据模拟页面',
-icon: 'none'
-});
+  uni.navigateTo({
+    url: '/pages/warning/alert'
+  });
 };
 const navigateToUpload = () => {
-uni.showToast({
-title: '跳转到数据上传页面',
-icon: 'none'
-});
+  uni.navigateTo({
+    url: '/pages/upload/upload'
+  });
 };
 const navigateToMonitor = () => {
-uni.showToast({
-title: '跳转到数据监控页面',
-icon: 'none'
-});
+  uni.navigateTo({
+    url: '/pages/monitor/monitor'
+  });
 };
 // 处理上传
 const handleUpload = () => {
@@ -216,19 +215,17 @@ padding-bottom: 40rpx;
 }
 /* 导航栏样式 */
 .nav-bar {
-background-color: #1a3a8f;
-height: 150rpx;
-display: flex;
-justify-content: center;
-align-items: center;
-box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-position: relative;
-z-index: 10;
+  background-color: transparent;
+  height: 60rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  z-index: 10;
 }
+
 .nav-title {
-color: #ffffff;
-font-size: 36px;
-font-weight: 600;
+  display: none;
 }
 /* 状态卡片样式 */
 .status-container {

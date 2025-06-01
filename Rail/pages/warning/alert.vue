@@ -1,14 +1,13 @@
-
 <template>
   <view class="page">
     <!-- 顶部导航栏 -->
-    <view class="nav-bar">
+    <!-- <view class="nav-bar">
       <view class="nav-left cursor-pointer" @click="goBack">
         <uni-icons type="arrow-left" size="24" color="#333"></uni-icons>
       </view>
       <view class="nav-title">数据模拟</view>
       <view class="nav-right"></view>
-    </view>
+    </view> -->
 
     <scroll-view scroll-y class="content-container" :style="{ height: scrollViewHeight + 'px' }">
       <!-- 时间显示区 -->
@@ -155,45 +154,12 @@
       </view>
     </scroll-view>
 
-    <!-- 时间选择弹窗 -->
-    <!-- <uni-popup ref="timePopup" type="bottom">
-      <view class="time-picker-popup">
-        <view class="picker-header">
-          <view class="cancel cursor-pointer" @click="cancelTimePicker">取消</view>
-          <view class="title">选择时间</view>
-          <view class="confirm cursor-pointer" @click="confirmTimePicker">确定</view>
-        </view>
-        <picker-view class="picker-view" :value="timePickerValue" @change="onTimePickerChange">
-          <picker-view-column>
-            <view class="picker-item" v-for="(year, index) in years" :key="'year-'+index">{{ year }}年</view>
-          </picker-view-column>
-          <picker-view-column>
-            <view class="picker-item" v-for="(month, index) in months" :key="'month-'+index">{{ month }}月</view>
-          </picker-view-column>
-          <picker-view-column>
-            <view class="picker-item" v-for="(day, index) in days" :key="'day-'+index">{{ day }}日</view>
-          </picker-view-column>
-          <picker-view-column>
-            <view class="picker-item" v-for="(hour, index) in hours" :key="'hour-'+index">{{ hour }}时</view>
-          </picker-view-column>
-          <picker-view-column>
-            <view class="picker-item" v-for="(minute, index) in minutes" :key="'minute-'+index">{{ minute }}分</view>
-          </picker-view-column>
-        </picker-view>
-      </view>
-    </uni-popup> -->
-
-    <!-- 加载提示 -->
-    <uni-popup ref="loadingPopup" type="center" :mask-click="false">
-      <view class="loading-box">
-        <uni-icons type="spinner-cycle" size="30" color="#3370ff"></uni-icons>
-        <text class="loading-text">{{ loadingText }}</text>
-      </view>
-    </uni-popup>
+    <tab-bar></tab-bar>
   </view>
 </template>
 <script lang="ts" setup>
 import { ref, computed, onMounted, reactive } from 'vue';
+import TabBar from '@/components/tab-bar/tab-bar.vue'
 
 // 页面高度计算
 const scrollViewHeight = ref(0);
@@ -201,16 +167,16 @@ const scrollViewHeight = ref(0);
 onMounted(() => {
   uni.getSystemInfo({
     success: (res) => {
-      // 假设导航栏高度为 90rpx
-      scrollViewHeight.value = res.windowHeight - uni.upx2px(90);
+      // 移除导航栏高度的计算，直接使用窗口高度
+      scrollViewHeight.value = res.windowHeight;
     }
   });
 });
 
 // 导航相关
-const goBack = () => {
-  uni.navigateBack();
-};
+// const goBack = () => {
+//   uni.navigateBack();
+// };
 
 // 时间选择相关
 const currentTime = ref(new Date());
@@ -285,74 +251,52 @@ const onSoilWaterContentChange = (e: any) => {
 // 模拟控制相关
 const isSimulating = ref(false);
 const simulationTimer = ref<number | null>(null);
-const loadingPopup = ref();
-const loadingText = ref('正在加载...');
 
 const startSimulation = () => {
   if (isSimulating.value) return;
+  isSimulating.value = true;
   
-  loadingText.value = '正在初始化模拟...';
-  loadingPopup.value.open();
-  
-  setTimeout(() => {
-    loadingPopup.value.close();
-    isSimulating.value = true;
-    
-    // 模拟数据更新
-    simulationTimer.value = setInterval(() => {
-      updateSimulationData();
-    }, 2000) as unknown as number;
-  }, 1500);
+  // 模拟数据更新
+  simulationTimer.value = setInterval(() => {
+    updateSimulationData();
+  }, 2000) as unknown as number;
 };
 
 const pauseSimulation = () => {
   if (!isSimulating.value) return;
   
-  loadingText.value = '正在暂停模拟...';
-  loadingPopup.value.open();
-  
-  setTimeout(() => {
-    if (simulationTimer.value !== null) {
-      clearInterval(simulationTimer.value);
-      simulationTimer.value = null;
-    }
-    isSimulating.value = false;
-    loadingPopup.value.close();
-  }, 800);
+  if (simulationTimer.value !== null) {
+    clearInterval(simulationTimer.value);
+    simulationTimer.value = null;
+  }
+  isSimulating.value = false;
 };
 
 const clearData = () => {
-  loadingText.value = '正在清空数据...';
-  loadingPopup.value.open();
+  // 重置所有数据
+  if (simulationTimer.value !== null) {
+    clearInterval(simulationTimer.value);
+    simulationTimer.value = null;
+  }
+  isSimulating.value = false;
   
-  setTimeout(() => {
-    // 重置所有数据
-    if (simulationTimer.value !== null) {
-      clearInterval(simulationTimer.value);
-      simulationTimer.value = null;
-    }
-    isSimulating.value = false;
-    
-    // 重置监测点数据
-    joint1Data.pressure = 0;
-    joint1Data.leakagePath = 0;
-    joint1Data.soilDensity = 1.5;
-    
-    joint2Data.pressure = 0;
-    joint2Data.leakagePath = 0;
-    joint2Data.soilDensity = 1.5;
-    
-    joint3Data.pressure = 0;
-    joint3Data.leakagePath = 0;
-    joint3Data.soilDensity = 1.5;
-    
-    tunnelDeformation.value = 0;
-    
-    // 清空历史数据
-    simulationHistory.value = [];
-    
-    loadingPopup.value.close();
-  }, 1000);
+  // 重置监测点数据
+  joint1Data.pressure = 0;
+  joint1Data.leakagePath = 0;
+  joint1Data.soilDensity = 1.5;
+  
+  joint2Data.pressure = 0;
+  joint2Data.leakagePath = 0;
+  joint2Data.soilDensity = 1.5;
+  
+  joint3Data.pressure = 0;
+  joint3Data.leakagePath = 0;
+  joint3Data.soilDensity = 1.5;
+  
+  tunnelDeformation.value = 0;
+  
+  // 清空历史数据
+  simulationHistory.value = [];
 };
 
 // 监测点数据
@@ -461,29 +405,17 @@ const chartImageUrl = computed(() => {
 
 // 导出功能
 const exportData = () => {
-  loadingText.value = '正在导出数据...';
-  loadingPopup.value.open();
-  
-  setTimeout(() => {
-    uni.showToast({
-      title: '模拟数据导出成功',
-      icon: 'success'
-    });
-    loadingPopup.value.close();
-  }, 1500);
+  uni.showToast({
+    title: '模拟数据导出成功',
+    icon: 'success'
+  });
 };
 
 const exportCSV = () => {
-  loadingText.value = '正在生成CSV文件...';
-  loadingPopup.value.open();
-  
-  setTimeout(() => {
-    uni.showToast({
-      title: 'CSV文件导出成功',
-      icon: 'success'
-    });
-    loadingPopup.value.close();
-  }, 1500);
+  uni.showToast({
+    title: 'CSV文件导出成功',
+    icon: 'success'
+  });
 };
 </script>
 <style>
@@ -503,7 +435,7 @@ page {
 }
 
 /* 导航栏 */
-.nav-bar {
+/* .nav-bar {
   height: 90rpx;
   display: flex;
   align-items: center;
@@ -527,13 +459,14 @@ page {
   font-size: 18px;
   font-weight: 600;
   color: #333333;
-}
+} */
 
 /* 内容区域 */
 .content-container {
   flex: 1;
-  overflow: auto;
-  padding: 30rpx;
+  box-sizing: border-box;
+  padding: 20rpx;
+  overflow-y: auto;
 }
 
 /* 时间显示区 */
@@ -572,10 +505,10 @@ page {
 }
 
 .param-title {
-  font-size: 16px;
+  font-size: 32rpx;
   font-weight: 600;
   color: #333333;
-  margin-bottom: 30rpx;
+  margin-bottom: 20rpx;
 }
 
 .param-item {
@@ -583,9 +516,9 @@ page {
 }
 
 .param-label {
-  font-size: 14px;
+  font-size: 28rpx;
   color: #666666;
-  margin-bottom: 16rpx;
+  margin-bottom: 10rpx;
 }
 
 .param-value {
@@ -593,7 +526,7 @@ page {
 }
 
 .picker {
-  height: 80rpx;
+  height: 70rpx;
   border: 1px solid #e0e0e0;
   border-radius: 8rpx;
   padding: 0 20rpx;
@@ -603,7 +536,7 @@ page {
 }
 
 .picker-text {
-  font-size: 14px;
+  font-size: 28rpx;
   color: #333333;
 }
 
@@ -650,10 +583,10 @@ page {
 }
 
 .result-title {
-  font-size: 16px;
+  font-size: 32rpx;
   font-weight: 600;
   color: #333333;
-  margin-bottom: 30rpx;
+  margin-bottom: 20rpx;
 }
 
 .joint-cards {
@@ -686,15 +619,16 @@ page {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 10rpx 0;
 }
 
 .data-label {
-  font-size: 14px;
+  font-size: 26rpx;
   color: #666666;
 }
 
 .data-value {
-  font-size: 14px;
+  font-size: 26rpx;
   font-weight: 500;
   color: #333333;
 }
@@ -703,9 +637,8 @@ page {
   background-color: #f0f5ff;
   border-radius: 12rpx;
   padding: 20rpx;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  text-align: center;
+  margin-top: 15rpx;
 }
 
 .deformation-title {
@@ -716,10 +649,10 @@ page {
 }
 
 .deformation-value {
-  font-size: 24px;
+  font-size: 48rpx;
   font-weight: 600;
   color: #3370ff;
-  margin-bottom: 10rpx;
+  margin: 10rpx 0;
 }
 
 .deformation-status {
@@ -755,13 +688,13 @@ page {
 
 .chart-tabs {
   display: flex;
-  margin-bottom: 20rpx;
   border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 15rpx;
 }
 
 .chart-tab {
-  padding: 16rpx 30rpx;
-  font-size: 14px;
+  padding: 15rpx 30rpx;
+  font-size: 28rpx;
   color: #666666;
   position: relative;
 }
@@ -774,10 +707,10 @@ page {
 .chart-tab.active::after {
   content: '';
   position: absolute;
-  bottom: -1px;
+  bottom: -2rpx;
   left: 0;
   width: 100%;
-  height: 2px;
+  height: 4rpx;
   background-color: #3370ff;
 }
 
@@ -820,67 +753,5 @@ page {
   background-color: #f5f7fa;
   color: #666666;
   border: 1px solid #e0e0e0;
-}
-
-/* 时间选择弹窗 */
-.time-picker-popup {
-  background-color: #ffffff;
-  border-top-left-radius: 16rpx;
-  border-top-right-radius: 16rpx;
-  overflow: hidden;
-}
-
-.picker-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 30rpx;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.cancel {
-  font-size: 14px;
-  color: #999999;
-}
-
-.title {
-  font-size: 16px;
-  font-weight: 500;
-  color: #333333;
-}
-
-.confirm {
-  font-size: 14px;
-  color: #3370ff;
-  font-weight: 500;
-}
-
-.picker-view {
-  width: 100%;
-  height: 500rpx;
-}
-
-.picker-item {
-  line-height: 80rpx;
-  text-align: center;
-  font-size: 14px;
-}
-
-/* 加载提示 */
-.loading-box {
-  width: 200rpx;
-  height: 200rpx;
-  background-color: rgba(0, 0, 0, 0.7);
-  border-radius: 16rpx;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-
-.loading-text {
-  font-size: 14px;
-  color: #ffffff;
-  margin-top: 20rpx;
 }
 </style>

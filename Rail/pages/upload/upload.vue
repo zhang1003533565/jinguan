@@ -1,14 +1,13 @@
-
 <template>
   <view class="upload-page">
     <!-- 顶部导航栏 -->
-    <view class="nav-bar">
+<!--    <view class="nav-bar">
       <view class="nav-left cursor-pointer" @click="goBack">
         <uni-icons type="back" size="24" color="#333"></uni-icons>
       </view>
       <view class="nav-title">数据上传</view>
       <view class="nav-right"></view>
-    </view>
+    </view> -->
 
     <!-- 上传方式选择区 -->
     <view class="upload-method">
@@ -39,27 +38,23 @@
     <view class="data-preview">
       <view class="preview-title">数据预览</view>
       
-      <!-- 表格头部 -->
-      <view class="table-header">
-        <view class="table-cell">传感器类型</view>
-        <view class="table-cell">编号</view>
-        <view class="table-cell">时间</view>
-        <view class="table-cell">数据值</view>
-      </view>
-
       <!-- 单条上传表单 -->
       <view class="table-content" v-if="uploadMethod === 'single'">
-        <view class="table-row">
-          <view class="table-cell">
+        <view class="preview-form">
+          <view class="form-item">
+            <view class="form-label">传感器类型</view>
             <input class="input-field" type="text" v-model="singleData.sensorType" placeholder="请输入类型" />
           </view>
-          <view class="table-cell">
+          <view class="form-item">
+            <view class="form-label">编号</view>
             <input class="input-field" type="text" v-model="singleData.sensorId" placeholder="请输入编号" />
           </view>
-          <view class="table-cell">
+          <view class="form-item">
+            <view class="form-label">时间</view>
             <input class="input-field" type="text" v-model="singleData.timestamp" placeholder="YYYY-MM-DD HH:MM" />
           </view>
-          <view class="table-cell">
+          <view class="form-item">
+            <view class="form-label">数据值</view>
             <input class="input-field" type="text" v-model="singleData.value" placeholder="请输入数值" />
           </view>
         </view>
@@ -81,10 +76,10 @@
           </view>
           <scroll-view class="preview-scroll" scroll-y>
             <view class="table-row" v-for="(item, index) in batchData" :key="index">
-              <view class="table-cell">{{ item.sensorType }}</view>
-              <view class="table-cell">{{ item.sensorId }}</view>
-              <view class="table-cell">{{ item.timestamp }}</view>
-              <view class="table-cell">{{ item.value }}</view>
+              <view class="table-cell" data-label="传感器类型：">{{ item.sensorType }}</view>
+              <view class="table-cell" data-label="编号：">{{ item.sensorId }}</view>
+              <view class="table-cell" data-label="时间：">{{ item.timestamp }}</view>
+              <view class="table-cell" data-label="数据值：">{{ item.value }}</view>
             </view>
           </scroll-view>
         </view>
@@ -140,10 +135,13 @@
         </view>
       </scroll-view>
     </view>
+
+    <tab-bar></tab-bar>
   </view>
 </template>
 <script lang="ts" setup>
 import { ref, reactive } from 'vue';
+import TabBar from '@/components/tab-bar/tab-bar.vue'
 
 // 上传方式
 const uploadMethod = ref('single');
@@ -503,24 +501,6 @@ page {
   margin-bottom: 20rpx;
 }
 
-.table-header {
-  display: flex;
-  background-color: #f2f6fc;
-  border-radius: 8rpx 8rpx 0 0;
-  border-bottom: 1px solid #ebeef5;
-}
-
-.table-cell {
-  flex: 1;
-  padding: 20rpx 16rpx;
-  font-size: 14px;
-  color: #606266;
-  text-align: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .table-content {
   max-height: 400rpx;
   overflow: auto;
@@ -777,5 +757,122 @@ page {
   font-size: 14px;
   color: #909399;
   margin-top: 20rpx;
+}
+
+/* 数据预览表单样式 */
+.preview-form {
+  padding: 20rpx;
+  background-color: #ffffff;
+  border-radius: 12rpx;
+}
+
+.form-item {
+  margin-bottom: 20rpx;
+}
+
+.form-label {
+  font-size: 28rpx;
+  color: #333333;
+  margin-bottom: 10rpx;
+  font-weight: 500;
+}
+
+.input-field {
+  width: 100%;
+  height: 80rpx;
+  background-color: #f5f7fa;
+  border-radius: 8rpx;
+  padding: 0 20rpx;
+  font-size: 28rpx;
+  color: #333333;
+  border: 2rpx solid #e8e8e8;
+}
+
+.input-field:focus {
+  border-color: #3498db;
+  background-color: #ffffff;
+}
+
+/* 预览标题 */
+.preview-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333333;
+  margin-bottom: 30rpx;
+  padding: 0 20rpx;
+}
+
+/* 文件上传区域 */
+.file-upload-area {
+  padding: 60rpx 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f7fa;
+  border: 2rpx dashed #d9d9d9;
+  border-radius: 12rpx;
+}
+
+.upload-text {
+  margin-top: 20rpx;
+  font-size: 28rpx;
+  color: #333333;
+}
+
+.upload-desc {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: #999999;
+}
+
+/* 批量预览样式 */
+.batch-preview {
+  background-color: #ffffff;
+  border-radius: 12rpx;
+  overflow: hidden;
+}
+
+.file-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx;
+  background-color: #f5f7fa;
+  border-bottom: 1rpx solid #e8e8e8;
+}
+
+.file-name {
+  font-size: 28rpx;
+  color: #333333;
+  font-weight: 500;
+}
+
+.file-action {
+  padding: 10rpx;
+}
+
+.preview-scroll {
+  max-height: 600rpx;
+}
+
+.table-row {
+  display: flex;
+  flex-direction: column;
+  padding: 20rpx;
+  border-bottom: 1rpx solid #e8e8e8;
+}
+
+.table-cell {
+  display: flex;
+  padding: 10rpx 0;
+  font-size: 28rpx;
+  color: #333333;
+}
+
+.table-cell:before {
+  content: attr(data-label);
+  width: 200rpx;
+  color: #666666;
 }
 </style>
