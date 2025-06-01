@@ -13,6 +13,19 @@
     </view>
     
     <view 
+      class="tab-item report-btn"
+      @click="switchTab('report')"
+    >
+      <view class="report-circle">
+        <image 
+          class="report-icon" 
+          src="/static/tabbar/report.png"
+        ></image>
+      </view>
+      <text class="tab-text">报告问题</text>
+    </view>
+    
+    <view 
       class="tab-item" 
       :class="{ active: currentPage === 'profile' }"
       @click="switchTab('profile')"
@@ -94,5 +107,27 @@ onMounted(() => {
 
 .text-active {
   color: #3370ff;
+}
+
+/* 报告问题按钮样式 */
+.report-btn {
+  margin-top: -30rpx;
+}
+
+.report-circle {
+  width: 90rpx;
+  height: 90rpx;
+  background: linear-gradient(135deg, #3370ff, #7ba6ff);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8rpx;
+  box-shadow: 0 4rpx 8rpx rgba(51, 112, 255, 0.2);
+}
+
+.report-icon {
+  width: 50rpx;
+  height: 50rpx;
 }
 </style> 

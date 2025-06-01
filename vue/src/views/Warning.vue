@@ -1,16 +1,16 @@
 <template>
-  <div class="h-screen bg-[#0D122A] text-white p-6">
-    <h2 class="text-xl font-bold mb-4">告警管理</h2>
+  <div class="h-screen bg-[#0D122A] text-white p-4 lg:p-6">
+    <h2 class="text-lg lg:text-xl font-bold mb-4">告警管理</h2>
 
     <!-- 筛选区域 -->
-    <div class="mb-4 flex flex-wrap gap-4 items-center">
-      <select v-model="filter.level" class="form-input w-40">
+    <div class="mb-4 flex flex-wrap gap-3 items-center text-sm lg:text-base">
+      <select v-model="filter.level" class="form-input w-28 lg:w-40">
         <option value="">全部级别</option>
         <option value="高">高</option>
         <option value="中">中</option>
         <option value="低">低</option>
       </select>
-      <select v-model="filter.type" class="form-input w-40">
+      <select v-model="filter.type" class="form-input w-28 lg:w-40">
         <option value="">全部类型</option>
         <option value="设备">设备</option>
         <option value="环境">环境</option>
@@ -19,77 +19,93 @@
         v-model="filter.keyword"
         type="text"
         placeholder="关键词搜索..."
-        class="form-input w-60"
+        class="form-input w-40 lg:w-60"
       />
       <button
         @click="applyFilter"
-        class="bg-blue-600 px-4 py-1 rounded text-sm"
+        class="bg-blue-600 px-3 py-1 rounded text-sm lg:text-base"
       >
         查询
       </button>
       <button
         @click="clearFilter"
-        class="bg-gray-600 px-3 py-1 rounded text-sm"
+        class="bg-gray-600 px-3 py-1 rounded text-sm lg:text-base"
       >
         清除
       </button>
       <button
-        @click="() => { console.log('打开导出弹窗'); showExportModal = true; }"
-        class="bg-green-600 px-3 py-1 rounded text-sm"
+        @click="() => { showExportModal = true; }"
+        class="bg-green-600 px-3 py-1 rounded text-sm lg:text-base"
       >
         导出 CSV
       </button>
       <button
         @click="openChart"
-        class="bg-purple-600 px-3 py-1 rounded text-sm"
+        class="bg-purple-600 px-3 py-1 rounded text-sm lg:text-base"
       >
         查看图表
       </button>
     </div>
 
     <!-- 表格区域 -->
-    <div class="bg-[#1B1F3B] rounded-lg p-4 overflow-auto">
-      <table class="w-full text-[15px] leading-relaxed text-left">
+    <div class="bg-[#1B1F3B] rounded-lg p-2 lg:p-4 overflow-x-auto">
+      <table class="w-full text-xs lg:text-sm leading-relaxed text-left min-w-[1200px]">
         <thead class="text-gray-300 border-b border-gray-600">
           <tr>
-            <th class="px-2 py-3">创建时间</th>
-            <th class="px-2 py-3">类型</th>
-            <th class="px-2 py-3">级别</th>
-            <th class="px-2 py-3">内容</th>
-            <th class="px-2 py-3">处理方式</th>
-            <th class="px-2 py-3">处理人</th>
-            <th class="px-2 py-3">处理时间</th>
-            <th class="px-2 py-3">状态</th>
-            <th class="px-2 py-3">操作</th>
+            <th class="px-2 py-2 lg:py-3 whitespace-nowrap">创建时间</th>
+            <th class="px-2 py-2 lg:py-3 whitespace-nowrap">隧道名称</th>
+            <th class="px-2 py-2 lg:py-3 whitespace-nowrap">类型</th>
+            <th class="px-2 py-2 lg:py-3 whitespace-nowrap">级别</th>
+            <th class="px-2 py-2 lg:py-3">内容</th>
+            <th class="px-2 py-2 lg:py-3">处理方式</th>
+            <th class="px-2 py-2 lg:py-3 whitespace-nowrap">处理人</th>
+            <th class="px-2 py-2 lg:py-3 whitespace-nowrap">处理时间</th>
+            <th class="px-2 py-2 lg:py-3 whitespace-nowrap">状态</th>
+            <th class="px-2 py-2 lg:py-3 whitespace-nowrap">操作</th>
           </tr>
         </thead>
         <tbody>
           <tr
             v-for="alarm in paginatedAlarms"
             :key="alarm.id"
-            class="border-b border-gray-700 hover:bg-[#2a2f50]"
+            class="border-b border-gray-700 hover:bg-[#2a2f50] text-sm"
           >
-            <td class="px-2 py-3">{{ formatDateTime(alarm.createdAt) }}</td>
-            <td class="px-2 py-3">{{ alarm.type }}</td>
-            <td class="px-2 py-3">{{ alarm.level }}</td>
-            <td class="px-2 py-3">{{ alarm.description }}</td>
-            <td class="px-2 py-3">{{ alarm.handleMethod || '-' }}</td>
-            <td class="px-2 py-3">{{ alarm.handler || '-' }}</td>
-            <td class="px-2 py-3">{{ alarm.handleTime ? formatDateTime(alarm.handleTime) : '-' }}</td>
-            <td class="px-2 py-3">{{ alarm.status }}</td>
-            <td class="px-2 py-3">
+            <td class="px-2 py-2 lg:py-3 whitespace-nowrap">{{ formatDateTime(alarm.createdAt) }}</td>
+            <td class="px-2 py-2 lg:py-3 whitespace-nowrap">{{ tunnelNames[alarm.tunnelId] || '加载中...' }}</td>
+            <td class="px-2 py-2 lg:py-3 whitespace-nowrap">{{ alarm.type }}</td>
+            <td class="px-2 py-2 lg:py-3 whitespace-nowrap">
+              <span :class="[
+                'px-2 py-1 rounded text-white text-xs',
+                alarm.level === '严重' ? 'bg-red-500' : 
+                alarm.level === '中等' ? 'bg-yellow-500' : 
+                'bg-green-500'
+              ]">{{ alarm.level }}</span>
+            </td>
+            <td class="px-2 py-2 lg:py-3 max-w-[300px] truncate">{{ alarm.description }}</td>
+            <td class="px-2 py-2 lg:py-3 max-w-[200px] truncate">{{ alarm.handleMethod || '-' }}</td>
+            <td class="px-2 py-2 lg:py-3 whitespace-nowrap">{{ alarm.handler || '-' }}</td>
+            <td class="px-2 py-2 lg:py-3 whitespace-nowrap">{{ alarm.handleTime ? formatDateTime(alarm.handleTime) : '-' }}</td>
+            <td class="px-2 py-2 lg:py-3 whitespace-nowrap">
+              <span :class="[
+                'px-2 py-1 rounded text-white text-xs',
+                alarm.status === '未处理' ? 'bg-red-500' : 
+                alarm.status === '处理中' ? 'bg-yellow-500' : 
+                'bg-green-500'
+              ]">{{ alarm.status }}</span>
+            </td>
+            <td class="px-2 py-2 lg:py-3 whitespace-nowrap">
               <button
-                class="text-blue-400 hover:underline mr-2"
+                class="text-blue-400 hover:underline mr-2 text-sm"
                 @click="viewDetail(alarm)"
               >
                 查看
               </button>
               <button
                 v-if="alarm.status === '未处理'"
-                class="text-green-400"
+                class="text-green-400 hover:underline text-sm"
                 @click="markProcessed(alarm)"
               >
-                ✅
+                处理
               </button>
             </td>
           </tr>
@@ -98,22 +114,27 @@
     </div>
 
     <!-- 分页 -->
-    <div class="flex justify-center mt-4 space-x-4 text-[15px]">
-      <button
-        @click="prevPage"
-        :disabled="page === 1"
-        class="px-3 py-1 rounded bg-gray-700"
-      >
-        上一页
-      </button>
-      <span>第 {{ page }} 页 / 共 {{ totalPages }} 页</span>
-      <button
-        @click="nextPage"
-        :disabled="page === totalPages"
-        class="px-3 py-1 rounded bg-gray-700"
-      >
-        下一页
-      </button>
+    <div class="flex flex-col lg:flex-row justify-between items-center mt-4 text-xs lg:text-sm gap-2">
+      <div class="text-gray-400">
+        共 {{ total }} 条记录，每页显示 {{ pageSize }} 条
+      </div>
+      <div class="flex items-center space-x-4">
+        <button
+          @click="prevPage"
+          :disabled="page === 1"
+          :class="['px-3 py-1 rounded', page === 1 ? 'bg-gray-700 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700']"
+        >
+          上一页
+        </button>
+        <span>第 {{ page }} 页 / 共 {{ totalPages }} 页</span>
+        <button
+          @click="nextPage"
+          :disabled="page === totalPages"
+          :class="['px-3 py-1 rounded', page === totalPages ? 'bg-gray-700 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700']"
+        >
+          下一页
+        </button>
+      </div>
     </div>
 
     <!-- 查看弹窗 -->
@@ -124,6 +145,7 @@
       <div class="bg-[#1B1F3B] p-6 rounded-lg w-[450px] text-[15px] text-white">
         <h3 class="text-lg font-bold mb-4">告警详情</h3>
         <p><strong>创建时间：</strong>{{ formatDateTime(selectedAlarm.createdAt) }}</p>
+        <p><strong>隧道名称：</strong>{{ tunnelNames[selectedAlarm.tunnelId] || '加载中...' }}</p>
         <p><strong>类型：</strong>{{ selectedAlarm.type }}</p>
         <p><strong>级别：</strong>{{ selectedAlarm.level }}</p>
         <p><strong>内容：</strong>{{ selectedAlarm.description }}</p>
@@ -216,6 +238,7 @@
 <script setup>
 import { ref, onMounted, computed, nextTick } from 'vue'
 import warningApi from '@/api/warning'
+import tunnelApi from '@/api/tunnel'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 
@@ -228,6 +251,9 @@ const showChartModal = ref(false)
 const exportMode = ref('all')
 const page = ref(1)
 const pageSize = 10
+const tunnelNames = ref({}) // 存储隧道ID和名称的映射
+const total = ref(0)
+const totalPages = ref(1)
 
 // 筛选条件
 const filter = ref({
@@ -236,6 +262,21 @@ const filter = ref({
   keyword: ''
 })
 
+// 获取隧道名称
+const fetchTunnelNames = async (tunnelIds) => {
+  try {
+    const uniqueIds = [...new Set(tunnelIds)]
+    for (const id of uniqueIds) {
+      const res = await tunnelApi.getTunnelById(id)
+      if (res.data) {
+        tunnelNames.value[id] = res.data.name
+      }
+    }
+  } catch (error) {
+    console.error('获取隧道名称失败：', error)
+  }
+}
+
 // 获取预警列表
 const fetchWarnings = async (retryCount = 0) => {
   try {
@@ -243,21 +284,30 @@ const fetchWarnings = async (retryCount = 0) => {
       loading.value = true
     }
     const params = {
-      page: page.value - 1,
+      page: page.value - 1, // Spring Boot 分页从0开始
       size: pageSize,
-      ...filter.value
+      type: filter.value.type || undefined,
+      level: filter.value.level || undefined,
+      status: filter.value.status || undefined,
+      keyword: filter.value.keyword || undefined
     }
     console.log(`${retryCount > 0 ? `[重试${retryCount}] ` : ''}开始获取预警列表，请求参数:`, params)
     
     const res = await warningApi.getList(params)
     console.log('预警列表响应数据:', res.data)
     
-    if (!res.data || !Array.isArray(res.data.content)) {
+    if (!res.data || !res.data.content) {
       throw new Error('响应数据格式错误')
     }
     
     alarms.value = res.data.content
     totalPages.value = res.data.totalPages
+    total.value = res.data.totalElements
+
+    // 获取所有告警中的隧道ID
+    const tunnelIds = alarms.value.map(alarm => alarm.tunnelId)
+    await fetchTunnelNames(tunnelIds)
+    
   } catch (error) {
     console.error('获取预警列表失败：', error)
     
@@ -576,19 +626,13 @@ const drawChart = () => {
 }
 
 // 分页相关
-const totalPages = ref(1)
-
-// 添加paginatedAlarms计算属性
-const paginatedAlarms = computed(() => {
-  return alarms.value
-})
-
 const prevPage = () => {
   if (page.value > 1) {
     page.value--
     fetchWarnings()
   }
 }
+
 const nextPage = () => {
   if (page.value < totalPages.value) {
     page.value++
@@ -598,16 +642,18 @@ const nextPage = () => {
 
 // 筛选相关
 const applyFilter = () => {
-  page.value = 1
+  page.value = 1 // 重置到第一页
   fetchWarnings()
 }
+
 const clearFilter = () => {
   filter.value = {
     level: '',
     type: '',
     keyword: ''
   }
-  applyFilter()
+  page.value = 1 // 重置到第一页
+  fetchWarnings()
 }
 
 // 查看详情
@@ -665,28 +711,44 @@ const handleExport = () => {
 onMounted(() => {
   fetchWarnings()
 })
+
+// 添加paginatedAlarms计算属性
+const paginatedAlarms = computed(() => {
+  return alarms.value
+})
 </script>
 
 <style scoped>
 .form-input {
-  background-color: #0d122a;
-  color: white;
-  border-radius: 0.25rem;
-  padding: 0.4rem 0.6rem;
-  border: 1px solid #334155;
-  outline: none;
-  font-size: 16px;
-  height: 42px;
+  @apply bg-[#0d122a] text-white rounded-md px-2 py-1 border border-gray-600 outline-none text-sm lg:text-base h-8 lg:h-10;
 }
 
 .form-input:focus {
-  border-color: #3b82f6;
+  @apply border-blue-500;
 }
 
-button,
-select,
-input[type="text"] {
-  font-size: 16px;
-  height: 42px;
+/* 确保表格在小屏幕上可以水平滚动 */
+.overflow-x-auto {
+  @apply scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 自定义滚动条样式 */
+.scrollbar-thin::-webkit-scrollbar {
+  height: 6px;
+}
+
+.scrollbar-thumb-gray-600::-webkit-scrollbar-thumb {
+  background-color: #4B5563;
+  border-radius: 3px;
+}
+
+.scrollbar-track-transparent::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+/* 表格内容超出时显示省略号 */
+.truncate {
+  @apply overflow-hidden text-ellipsis whitespace-nowrap;
 }
 </style>

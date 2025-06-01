@@ -44,6 +44,14 @@
           "titleNView": false
         }
       }
+    },
+    {
+      "path": "pages/report/report",
+      "style": {
+        "navigationBarTitleText": "报告问题",
+        "navigationBarBackgroundColor": "#3370ff",
+        "navigationBarTextStyle": "white"
+      }
     }
   ],
   "globalStyle": {
