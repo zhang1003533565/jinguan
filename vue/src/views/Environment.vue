@@ -1,247 +1,252 @@
 <template>
-  <div class="p-6 bg-[#0D122A] min-h-screen text-white space-y-6">
-    <!-- 隧道选择器 -->
-    <div class="flex items-center space-x-4 mb-4">
-      <span class="text-gray-300">当前隧道：</span>
-      <div class="relative w-48">
-        <el-select 
-          v-model="selectedTunnel" 
-          size="small"
-          class="!w-full custom-select"
-          @change="handleTunnelChange"
-        >
-          <el-option
-            v-for="tunnel in tunnels"
-            :key="tunnel.id"
-            :label="tunnel.name"
-            :value="tunnel.id"
-          />
-        </el-select>
+  <div class="h-[calc(100vh-64px)] lg:h-[calc(100vh-80px)] xl:h-[calc(100vh-96px)] overflow-y-auto bg-[#0D122A] text-white">
+    <div class="p-4 lg:p-6 space-y-4 lg:space-y-6 pb-16">
+      <!-- 隧道选择器 -->
+      <div class="flex items-center space-x-4 mb-4">
+        <span class="text-gray-300 text-sm lg:text-base">当前隧道：</span>
+        <div class="relative w-36 lg:w-48">
+          <el-select 
+            v-model="selectedTunnel" 
+            size="small"
+            class="!w-full custom-select"
+            @change="handleTunnelChange"
+          >
+            <el-option
+              v-for="tunnel in tunnels"
+              :key="tunnel.id"
+              :label="tunnel.name"
+              :value="tunnel.id"
+            />
+          </el-select>
+        </div>
       </div>
-    </div>
-    
-    <!-- 状态卡片 -->
-    <div class="space-y-4">
-      <!-- 入口监测点 -->
-      <div class="bg-dark-blue-light border border-blue-800 rounded-lg shadow-xl p-4">
-        <h3 class="text-lg font-bold mb-4 text-blue-400">
-          <i class="fas fa-door-open mr-2"></i>入口监测点
-        </h3>
-        <div class="grid grid-cols-4 gap-4 text-sm">
-          <div class="bg-[#1a1f37] border border-blue-900 rounded-lg p-4 flex items-center space-x-2">
-            <i class="fas fa-thermometer-half text-blue-400 text-lg"></i>
-            <span>温度：<span class="text-green-400">{{ entranceData.temperature || '--' }}°C</span></span>
+      
+      <!-- 状态卡片 -->
+      <div class="space-y-4">
+        <!-- 入口监测点 -->
+        <div class="bg-dark-blue-light border border-blue-800 rounded-lg shadow-xl p-3 lg:p-4">
+          <h3 class="text-base lg:text-lg font-bold mb-3 lg:mb-4 text-blue-400">
+            <i class="fas fa-door-open mr-2"></i>入口监测点
+          </h3>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-2 lg:gap-4 text-xs lg:text-sm">
+            <div class="bg-[#1a1f37] border border-blue-900 rounded-lg p-2 lg:p-4 flex items-center space-x-2">
+              <i class="fas fa-thermometer-half text-blue-400 text-base lg:text-lg"></i>
+              <span>温度：<span class="text-green-400">{{ entranceData.temperature || '--' }}°C</span></span>
+            </div>
+            <div class="bg-[#1a1f37] border border-blue-900 rounded-lg p-2 lg:p-4 flex items-center space-x-2">
+              <i class="fas fa-tint text-green-400 text-base lg:text-lg"></i>
+              <span>湿度：<span class="text-green-400">{{ entranceData.humidity || '--' }}%</span></span>
+            </div>
+            <div class="bg-[#1a1f37] border border-blue-900 rounded-lg p-2 lg:p-4 flex items-center space-x-2">
+              <i class="fas fa-burn text-yellow-400 text-base lg:text-lg"></i>
+              <span>瓦斯浓度：<span class="text-yellow-400">{{ formatGasValue(entranceData.co2) }}%</span></span>
+            </div>
+            <div class="bg-[#1a1f37] border border-blue-900 rounded-lg p-2 lg:p-4 flex items-center space-x-2">
+              <i class="fas fa-smog text-blue-300 text-base lg:text-lg"></i>
+              <span>空气质量：<span class="text-blue-300">{{ entranceData.pm25 || '--' }}</span></span>
+            </div>
           </div>
-          <div class="bg-[#1a1f37] border border-blue-900 rounded-lg p-4 flex items-center space-x-2">
-            <i class="fas fa-tint text-green-400 text-lg"></i>
-            <span>湿度：<span class="text-green-400">{{ entranceData.humidity || '--' }}%</span></span>
+        </div>
+
+        <!-- 中段监测点 -->
+        <div class="bg-dark-blue-light border border-blue-800 rounded-lg shadow-xl p-3 lg:p-4">
+          <h3 class="text-base lg:text-lg font-bold mb-3 lg:mb-4 text-blue-400">
+            <i class="fas fa-grip-lines-vertical mr-2"></i>中段监测点
+          </h3>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-2 lg:gap-4 text-xs lg:text-sm">
+            <div class="bg-[#1a1f37] border border-blue-900 rounded-lg p-2 lg:p-4 flex items-center space-x-2">
+              <i class="fas fa-thermometer-half text-blue-400 text-base lg:text-lg"></i>
+              <span>温度：<span class="text-green-400">{{ middleData.temperature || '--' }}°C</span></span>
+            </div>
+            <div class="bg-[#1a1f37] border border-blue-900 rounded-lg p-2 lg:p-4 flex items-center space-x-2">
+              <i class="fas fa-tint text-green-400 text-base lg:text-lg"></i>
+              <span>湿度：<span class="text-green-400">{{ middleData.humidity || '--' }}%</span></span>
+            </div>
+            <div class="bg-[#1a1f37] border border-blue-900 rounded-lg p-2 lg:p-4 flex items-center space-x-2">
+              <i class="fas fa-burn text-yellow-400 text-base lg:text-lg"></i>
+              <span>瓦斯浓度：<span class="text-yellow-400">{{ formatGasValue(middleData.co2) }}%</span></span>
+            </div>
+            <div class="bg-[#1a1f37] border border-blue-900 rounded-lg p-2 lg:p-4 flex items-center space-x-2">
+              <i class="fas fa-smog text-blue-300 text-base lg:text-lg"></i>
+              <span>空气质量：<span class="text-blue-300">{{ middleData.pm25 || '--' }}</span></span>
+            </div>
           </div>
-          <div class="bg-[#1a1f37] border border-blue-900 rounded-lg p-4 flex items-center space-x-2">
-            <i class="fas fa-burn text-yellow-400 text-lg"></i>
-            <span>瓦斯浓度：<span class="text-yellow-400">{{ formatGasValue(entranceData.co2) }}%</span></span>
-          </div>
-          <div class="bg-[#1a1f37] border border-blue-900 rounded-lg p-4 flex items-center space-x-2">
-            <i class="fas fa-smog text-blue-300 text-lg"></i>
-            <span>空气质量：<span class="text-blue-300">{{ entranceData.pm25 || '--' }}</span></span>
+        </div>
+
+        <!-- 出口监测点 -->
+        <div class="bg-dark-blue-light border border-blue-800 rounded-lg shadow-xl p-3 lg:p-4">
+          <h3 class="text-base lg:text-lg font-bold mb-3 lg:mb-4 text-blue-400">
+            <i class="fas fa-door-closed mr-2"></i>出口监测点
+          </h3>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-2 lg:gap-4 text-xs lg:text-sm">
+            <div class="bg-[#1a1f37] border border-blue-900 rounded-lg p-2 lg:p-4 flex items-center space-x-2">
+              <i class="fas fa-thermometer-half text-blue-400 text-base lg:text-lg"></i>
+              <span>温度：<span class="text-green-400">{{ exitData.temperature || '--' }}°C</span></span>
+            </div>
+            <div class="bg-[#1a1f37] border border-blue-900 rounded-lg p-2 lg:p-4 flex items-center space-x-2">
+              <i class="fas fa-tint text-green-400 text-base lg:text-lg"></i>
+              <span>湿度：<span class="text-green-400">{{ exitData.humidity || '--' }}%</span></span>
+            </div>
+            <div class="bg-[#1a1f37] border border-blue-900 rounded-lg p-2 lg:p-4 flex items-center space-x-2">
+              <i class="fas fa-burn text-yellow-400 text-base lg:text-lg"></i>
+              <span>瓦斯浓度：<span class="text-yellow-400">{{ formatGasValue(exitData.co2) }}%</span></span>
+            </div>
+            <div class="bg-[#1a1f37] border border-blue-900 rounded-lg p-2 lg:p-4 flex items-center space-x-2">
+              <i class="fas fa-smog text-blue-300 text-base lg:text-lg"></i>
+              <span>空气质量：<span class="text-blue-300">{{ exitData.pm25 || '--' }}</span></span>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- 中段监测点 -->
-      <div class="bg-dark-blue-light border border-blue-800 rounded-lg shadow-xl p-4">
-        <h3 class="text-lg font-bold mb-4 text-blue-400">
-          <i class="fas fa-grip-lines-vertical mr-2"></i>中段监测点
-        </h3>
-        <div class="grid grid-cols-4 gap-4 text-sm">
-          <div class="bg-[#1a1f37] border border-blue-900 rounded-lg p-4 flex items-center space-x-2">
-            <i class="fas fa-thermometer-half text-blue-400 text-lg"></i>
-            <span>温度：<span class="text-green-400">{{ middleData.temperature || '--' }}°C</span></span>
+      <!-- 折线图区域 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="bg-dark-blue-light border border-blue-800 rounded-lg shadow-xl p-3 lg:p-4">
+          <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-2">
+            <h2 class="text-base lg:text-lg font-bold mb-2 lg:mb-0">
+              <i class="fas fa-thermometer-half mr-2 text-blue-400"></i>温度趋势
+            </h2>
+            <div class="flex flex-wrap gap-1">
+              <button
+                v-for="location in locationOptions"
+                :key="location"
+                @click="handleLocationChange(location)"
+                :class="[
+                  'px-2 lg:px-3 py-1 rounded text-xs lg:text-sm whitespace-nowrap',
+                  selectedLocation === location
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                ]"
+              >
+                {{ location }}
+              </button>
+            </div>
           </div>
-          <div class="bg-[#1a1f37] border border-blue-900 rounded-lg p-4 flex items-center space-x-2">
-            <i class="fas fa-tint text-green-400 text-lg"></i>
-            <span>湿度：<span class="text-green-400">{{ middleData.humidity || '--' }}%</span></span>
+          <div id="tempChart" class="h-32 lg:h-40"></div>
+        </div>
+        
+        <div class="bg-dark-blue-light border border-blue-800 rounded-lg shadow-xl p-3 lg:p-4">
+          <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-2">
+            <h2 class="text-base lg:text-lg font-bold mb-2 lg:mb-0">
+              <i class="fas fa-tint mr-2 text-green-400"></i>湿度趋势
+            </h2>
+            <div class="flex flex-wrap gap-1">
+              <button
+                v-for="location in locationOptions"
+                :key="location"
+                @click="handleLocationChange(location)"
+                :class="[
+                  'px-2 lg:px-3 py-1 rounded text-xs lg:text-sm whitespace-nowrap',
+                  selectedLocation === location
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                ]"
+              >
+                {{ location }}
+              </button>
+            </div>
           </div>
-          <div class="bg-[#1a1f37] border border-blue-900 rounded-lg p-4 flex items-center space-x-2">
-            <i class="fas fa-burn text-yellow-400 text-lg"></i>
-            <span>瓦斯浓度：<span class="text-yellow-400">{{ formatGasValue(middleData.co2) }}%</span></span>
+          <div id="humidityChart" class="h-32 lg:h-40"></div>
+        </div>
+
+        <div class="bg-dark-blue-light border border-blue-800 rounded-lg shadow-xl p-3 lg:p-4">
+          <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-4">
+            <h2 class="text-base lg:text-lg font-bold mb-2 lg:mb-0">
+              <i class="fas fa-burn text-yellow-400 mr-2"></i>瓦斯浓度趋势
+            </h2>
+            <div class="flex space-x-2">
+              <button
+                v-for="location in locationOptions"
+                :key="location"
+                @click="handleLocationChange(location)"
+                :class="[
+                  'px-2 lg:px-3 py-1 rounded text-xs lg:text-sm',
+                  selectedLocation === location
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                ]"
+              >
+                {{ location }}
+              </button>
+            </div>
           </div>
-          <div class="bg-[#1a1f37] border border-blue-900 rounded-lg p-4 flex items-center space-x-2">
-            <i class="fas fa-smog text-blue-300 text-lg"></i>
-            <span>空气质量：<span class="text-blue-300">{{ middleData.pm25 || '--' }}</span></span>
-          </div>
+          <div id="gasChart" class="h-40 lg:h-48"></div>
         </div>
       </div>
 
-      <!-- 出口监测点 -->
-      <div class="bg-dark-blue-light border border-blue-800 rounded-lg shadow-xl p-4">
-        <h3 class="text-lg font-bold mb-4 text-blue-400">
-          <i class="fas fa-door-closed mr-2"></i>出口监测点
-        </h3>
-        <div class="grid grid-cols-4 gap-4 text-sm">
-          <div class="bg-[#1a1f37] border border-blue-900 rounded-lg p-4 flex items-center space-x-2">
-            <i class="fas fa-thermometer-half text-blue-400 text-lg"></i>
-            <span>温度：<span class="text-green-400">{{ exitData.temperature || '--' }}°C</span></span>
+      <!-- 沉降速率 + 空气质量 -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-dark-blue-light border border-blue-800 rounded-lg shadow-xl p-3 lg:p-4">
+          <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-2">
+            <h2 class="text-base lg:text-lg font-bold mb-2 lg:mb-0">
+              <i class="fas fa-arrow-down text-yellow-400 mr-2"></i>沉降速率变化（mm/h）
+            </h2>
+            <div class="flex flex-wrap gap-1">
+              <button
+                v-for="location in locationOptions"
+                :key="location"
+                @click="handleLocationChange(location)"
+                :class="[
+                  'px-2 lg:px-3 py-1 rounded text-xs lg:text-sm whitespace-nowrap',
+                  selectedLocation === location
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                ]"
+              >
+                {{ location }}
+              </button>
+            </div>
           </div>
-          <div class="bg-[#1a1f37] border border-blue-900 rounded-lg p-4 flex items-center space-x-2">
-            <i class="fas fa-tint text-green-400 text-lg"></i>
-            <span>湿度：<span class="text-green-400">{{ exitData.humidity || '--' }}%</span></span>
-          </div>
-          <div class="bg-[#1a1f37] border border-blue-900 rounded-lg p-4 flex items-center space-x-2">
-            <i class="fas fa-burn text-yellow-400 text-lg"></i>
-            <span>瓦斯浓度：<span class="text-yellow-400">{{ formatGasValue(exitData.co2) }}%</span></span>
-          </div>
-          <div class="bg-[#1a1f37] border border-blue-900 rounded-lg p-4 flex items-center space-x-2">
-            <i class="fas fa-smog text-blue-300 text-lg"></i>
-            <span>空气质量：<span class="text-blue-300">{{ exitData.pm25 || '--' }}</span></span>
-          </div>
+          <div id="settleChart" class="h-32 lg:h-40"></div>
         </div>
-      </div>
-    </div>
 
-    <!-- 折线图区域 -->
-    <div class="grid grid-cols-3 gap-4">
-      <div class="bg-dark-blue-light border border-blue-800 rounded-lg shadow-xl p-4">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-lg font-bold">
-            <i class="fas fa-thermometer-half mr-2 text-blue-400"></i>温度趋势
-          </h2>
-          <div class="flex space-x-2">
-            <button
-              v-for="location in locationOptions"
-              :key="location"
-              @click="handleLocationChange(location)"
-              :class="[
-                'px-3 py-1 rounded text-sm',
-                selectedLocation === location
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-              ]"
-            >
-              {{ location }}
-            </button>
+        <div class="bg-dark-blue-light border border-blue-800 rounded-lg shadow-xl p-3 lg:p-4">
+          <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-2">
+            <h2 class="text-base lg:text-lg font-bold mb-2 lg:mb-0">
+              <i class="fas fa-smog text-blue-300 mr-2"></i>空气质量变化
+            </h2>
+            <div class="flex flex-wrap gap-1">
+              <button
+                v-for="location in locationOptions"
+                :key="location"
+                @click="handleLocationChange(location)"
+                :class="[
+                  'px-2 lg:px-3 py-1 rounded text-xs lg:text-sm whitespace-nowrap',
+                  selectedLocation === location
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                ]"
+              >
+                {{ location }}
+              </button>
+            </div>
           </div>
+          <div id="aqiChart" class="h-32 lg:h-40"></div>
         </div>
-        <div id="tempChart" class="h-48"></div>
       </div>
-      <div class="bg-dark-blue-light border border-blue-800 rounded-lg shadow-xl p-4">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-lg font-bold">
-            <i class="fas fa-tint mr-2 text-green-400"></i>湿度趋势
-          </h2>
-          <div class="flex space-x-2">
-            <button
-              v-for="location in locationOptions"
-              :key="location"
-              @click="handleLocationChange(location)"
-              :class="[
-                'px-3 py-1 rounded text-sm',
-                selectedLocation === location
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-              ]"
-            >
-              {{ location }}
-            </button>
-          </div>
-        </div>
-        <div id="humidityChart" class="h-48"></div>
-      </div>
-      <div class="bg-dark-blue-light border border-blue-800 rounded-lg shadow-xl p-4">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-lg font-bold">
-            <i class="fas fa-burn text-yellow-400 mr-2"></i>瓦斯浓度趋势
-          </h2>
-          <div class="flex space-x-2">
-            <button
-              v-for="location in locationOptions"
-              :key="location"
-              @click="handleLocationChange(location)"
-              :class="[
-                'px-3 py-1 rounded text-sm',
-                selectedLocation === location
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-              ]"
-            >
-              {{ location }}
-            </button>
-          </div>
-        </div>
-        <div id="gasChart" class="h-48"></div>
-      </div>
-    </div>
 
-    <!-- 沉降速率 + 空气质量 -->
-    <div class="grid grid-cols-2 gap-4">
-      <div class="bg-dark-blue-light border border-blue-800 rounded-lg shadow-xl p-4">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-lg font-bold">
-            <i class="fas fa-arrow-down text-yellow-400 mr-2"></i>沉降速率变化（mm/h）
-          </h2>
-          <div class="flex space-x-2">
-            <button
-              v-for="location in locationOptions"
-              :key="location"
-              @click="handleLocationChange(location)"
-              :class="[
-                'px-3 py-1 rounded text-sm',
-                selectedLocation === location
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-              ]"
-            >
-              {{ location }}
-            </button>
+      <!-- 告警事件日志区域 -->
+      <div class="mt-4 lg:mt-6 max-h-[180px] overflow-y-auto pr-1">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-4">
+          <div
+            v-for="event in sortedEvents"
+            :key="event.id"
+            :class="[
+              'rounded p-2 lg:p-3 text-xs lg:text-sm shadow flex justify-between items-center',
+              event.type === 'warn'
+                ? 'bg-red-900/50 border border-red-800 text-red-300'
+                : event.type === 'info'
+                ? 'bg-blue-900/30 border border-blue-800 text-blue-300'
+                : 'bg-yellow-900/30 border border-yellow-600 text-yellow-300',
+              event.highlight ? 'animate-highlight' : '',
+            ]"
+          >
+            <div class="flex-1 truncate flex items-center">
+              <i class="fas fa-exclamation-triangle text-yellow-300 mr-2"></i>
+              {{ event.message }}
+            </div>
+            <div class="ml-2 lg:ml-4 text-[10px] lg:text-xs whitespace-nowrap">{{ event.time }}</div>
           </div>
-        </div>
-        <div id="settleChart" class="h-48"></div>
-      </div>
-      <div class="bg-dark-blue-light border border-blue-800 rounded-lg shadow-xl p-4">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-lg font-bold">
-            <i class="fas fa-smog text-blue-300 mr-2"></i>空气质量变化
-          </h2>
-          <div class="flex space-x-2">
-            <button
-              v-for="location in locationOptions"
-              :key="location"
-              @click="handleLocationChange(location)"
-              :class="[
-                'px-3 py-1 rounded text-sm',
-                selectedLocation === location
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-              ]"
-            >
-              {{ location }}
-            </button>
-          </div>
-        </div>
-        <div id="aqiChart" class="h-48"></div>
-      </div>
-    </div>
-
-    <!-- 告警事件日志区域 -->
-    <div class="mt-6 max-h-[300px] overflow-y-auto pr-1">
-      <div class="grid grid-cols-3 gap-4">
-        <div
-          v-for="event in sortedEvents"
-          :key="event.id"
-          :class="[
-            'rounded p-3 text-sm shadow flex justify-between items-center',
-            event.type === 'warn'
-              ? 'bg-red-900/50 border border-red-800 text-red-300'
-              : event.type === 'info'
-              ? 'bg-blue-900/30 border border-blue-800 text-blue-300'
-              : 'bg-yellow-900/30 border border-yellow-600 text-yellow-300',
-            event.highlight ? 'animate-highlight' : '',
-          ]"
-        >
-          <div class="flex-1 truncate flex items-center">
-            <i class="fas fa-exclamation-triangle text-yellow-300 mr-2"></i>
-            {{ event.message }}
-          </div>
-          <div class="ml-4 text-xs whitespace-nowrap">{{ event.time }}</div>
         </div>
       </div>
     </div>
@@ -922,6 +927,44 @@ const handleLocationChange = (location) => {
   .el-select-dropdown__item.selected {
     background-color: #2563eb !important;
     font-weight: normal !important;
+  }
+}
+
+/* 修改滚动条样式 */
+.overflow-y-auto {
+  scrollbar-width: thin;
+  scrollbar-color: #3B82F6 transparent;
+}
+
+.overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background-color: #3B82F6;
+  border-radius: 3px;
+}
+
+/* 修改图表容器的高度 */
+#tempChart,
+#humidityChart,
+#gasChart,
+#settleChart,
+#aqiChart {
+  min-height: 120px;
+}
+
+@media (min-width: 1024px) {
+  #tempChart,
+  #humidityChart,
+  #gasChart,
+  #settleChart,
+  #aqiChart {
+    min-height: 160px;
   }
 }
 </style>
